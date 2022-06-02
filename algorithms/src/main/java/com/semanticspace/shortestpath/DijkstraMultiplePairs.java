@@ -150,7 +150,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         progressTracker.beginSubTask();
         ParallelUtil.runWithConcurrency(concurrency, taskList, 1, MICROSECONDS, terminationFlag, executorService);
-        progressTracker.endSubTask();
 
         allPaths.sort((o1,o2) -> o1.index() > o2.index() ? 1 : -1);
         return new DijkstraResult(allPaths.stream(), progressTracker::endSubTask);
