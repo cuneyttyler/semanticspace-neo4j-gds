@@ -1,0 +1,84 @@
+apply plugin: 'java-library'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+description = 'Neo4j Graph Data Science :: Open Packaging'
+group = 'org.neo4j.gds'
+
+apply from: '../gradle/licensing.gradle'
+
+dependencies {
+    implementation project(':procedures')
+    implementation project(':algorithms')
+    implementation 'org.neo4j.gds:open-model-catalog:' + ver.'gds'
+    implementation 'org.neo4j.gds:open-write-services:' + ver.'gds'
+
+}
+
+task licenseFile {
+    outputs.file(distributionLicenseFile)
+}
+
+task checkLicensesFile {
+    dependsOn generateLicensesFiles
+
+    doLast {
+        def licenceHeader = rootProject.file("$publicDir/etc/licenses/headers/LICENSES-header.txt").text
+        def generatedLicenseFile = file("$buildDir/reports/license/LICENSES.txt").text
+        if (generatedLicenseFile.equals(licenceHeader)) {
+            throw new GradleException("LICENSES.txt file is empty!")
+        }
+    }
+}
+
+shadowJar {
+    dependsOn checkLicensesFile
+
+    relocate('com.', 'org.neo4j.gds.shaded.com.') {
+        exclude 'com/neo4j/**'
+        exclude 'com/semanticspace/**'
+    }
+//    relocate('org.', 'excluded.org.') {
+//    }
+    relocate('de.siegmar.', 'excluded.de.siegmar')
+    relocate('io.jsonwebtoken.', 'excluded.de.io.jsonwebtoken.')
+    relocate('pabeles', 'excluded.de.pabeles')
+
+    relocate('javassist', 'excluded.de.javassist')
+
+    relocate('javax.annotation.', 'excluded.de.javax.annotation.')
+
+//    relocate('org.neo4j.gds.shaded.com.','com.')
+//    relocate('com.','org.neo4j.gds.shaded.com.')
+
+    mergeServiceFiles()
+    archiveBaseName.set("semantic-space-gds")
+    archiveClassifier.set("")
+    exclude 'META-INF/versions/**/*'
+    exclude 'module-info.class'
+    exclude 'LICENSE'
+    exclude 'LICENSE-*'
+    exclude 'META-INF/LICENSE*'
+    exclude 'META-INF/NOTICE*'
+    exclude 'THIRD-PARTY'
+    exclude '*.html'
+    // Exclude proto files
+    exclude 'config/'
+    exclude '*.proto'
+    exclude 'google/'
+    exclude 'ml/'
+    // Exclude french localization in commons-math
+    exclude 'assets/'
+    exclude 'com/neo4j/**'
+    exclude 'excluded/**'
+
+    from licenseFile
+    from generateLicensesFiles
+}
+
+task shadowCopy(type: Copy) {
+    from(shadowJar)
+    into distributionDir
+}
+
+ci.finalizedBy shadowCopy
+cipr.finalizedBy shadowCopy

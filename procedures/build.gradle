@@ -1,0 +1,64 @@
+plugins {
+    id 'java'
+}
+
+apply plugin: 'java-library'
+
+group 'com.semanticspace.gds'
+version '2.0.4'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    annotationProcessor 'org.neo4j.gds:annotations:' + ver.'gds'
+
+    annotationProcessor group: 'org.immutables',           name: 'builder',            version: ver.'immutables'
+    annotationProcessor group: 'org.immutables',           name: 'value',              version: ver.'immutables'
+    annotationProcessor group: 'org.neo4j',                name: 'annotations',        version: ver.'neo4j'
+
+    compileOnly group: 'org.immutables', name: 'value-annotations', version: ver.'immutables'
+    compileOnly group: 'org.jetbrains',  name: 'annotations',       version: ver.'jetbrains-annotations'
+
+    api project(':algorithms')
+
+    gdsdeps().each {
+        compileOnly(group: 'org.neo4j.gds', name: it, version: ver.'gds') {
+            transitive = false
+        }
+    }
+    neodeps().each {
+        compileOnly(group: 'org.neo4j', name: it, version: ver.'neo4j') {
+            transitive = false
+        }
+    }
+
+    testAnnotationProcessor 'org.neo4j.gds:annotations:' + ver.'gds'
+
+    implementation group: 'org.apache.commons', name: 'commons-math3', version: ver.'commons-math3'
+
+    testImplementation 'org.neo4j.gds:algo-common:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:algo-test:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:annotations:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:transaction:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:core:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:config-api:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:string-formatting:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:executor:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:graph-schema-api:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:test-utils:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:neo4j-kernel-adapter-api:' + ver.'gds'
+    testImplementation project(':proc-test')
+    testImplementation 'org.neo4j.gds:proc-path-finding:' + ver.'gds'
+    testImplementation group: 'org.mockito', name:'mockito-junit-jupiter', version: ver.'mockito-junit-jupiter'
+    testCompileOnly group: 'org.immutables', name: 'value-annotations', version: ver.'immutables'
+    testCompileOnly group: 'org.immutables', name: 'builder',           version: ver.'immutables'
+    testCompileOnly group: 'org.jetbrains',  name: 'annotations',       version: ver.'jetbrains-annotations'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+test {
+    useJUnitPlatform()
+}

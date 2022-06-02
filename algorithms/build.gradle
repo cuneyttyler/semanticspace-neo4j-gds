@@ -1,0 +1,76 @@
+plugins {
+    id 'java'
+}
+
+apply plugin: 'java-library'
+
+group 'com.semanticspace.gds'
+version '2.0.4'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    annotationProcessor 'org.neo4j.gds:annotations:' + ver.'gds'
+    annotationProcessor 'org.neo4j.gds:config-generator:' + ver.'gds'
+    annotationProcessor group: 'org.immutables',           name: 'builder',            version: ver.'immutables'
+    annotationProcessor group: 'org.immutables',           name: 'value',              version: ver.'immutables'
+    annotationProcessor group: 'org.neo4j',                name: 'annotations',        version: ver.'neo4j'
+
+    compileOnly group: 'org.immutables', name: 'value-annotations',  version: ver.'immutables'
+    compileOnly group: 'org.immutables', name: 'builder',            version: ver.'immutables'
+    compileOnly group: 'org.jetbrains',  name: 'annotations',        version: ver.'jetbrains-annotations'
+
+    compileOnly group: 'com.carrotsearch', name: 'hppc', version: ver.'hppc'
+    implementation group: 'com.carrotsearch', name: 'hppc', version: ver.'hppc'
+
+
+    gdsdeps().each {
+        compileOnly(group: 'org.neo4j.gds', name: it, version: ver.'gds') {
+            transitive = false
+        }
+    }
+    neodeps().each {
+        compileOnly(group: 'org.neo4j', name: it, version: ver.'neo4j') {
+            transitive = false
+        }
+    }
+
+    api(
+            'org.neo4j.gds:neo4j-kernel-adapter:' + ver.'gds'
+    )
+
+    compileOnly group: 'org.neo4j', name: 'neo4j-graph-algo', version: ver.'neo4j'
+
+    // TEST DEPENDENCIES
+    testAnnotationProcessor 'org.neo4j.gds:annotations:' + ver.'gds'
+    testAnnotationProcessor 'org.neo4j.gds:config-generator:' + ver.'gds'
+
+    testCompileOnly group: 'com.github.spotbugs', name: 'spotbugs-annotations', version: ver.'spotbugsToolVersion'
+
+    api(
+            [group: 'org.apache.commons',        name: 'commons-math3',                     version: ver.'commons-math3']
+    )
+
+    testImplementation 'org.neo4j.gds:algo:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:algo-common:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:algo-test:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:annotations:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:config-api:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:edition-api:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:memory-usage:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:core:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:string-formatting:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:test-utils:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:ml-test-utils:' + ver.'gds'
+    testImplementation group: 'net.jqwik', name: 'jqwik', version: ver.'jqwik'
+//    testImplementation group: 'com.github.s1ck', name: 'gdl', version: ver.
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+
+test {
+    useJUnitPlatform()
+}
