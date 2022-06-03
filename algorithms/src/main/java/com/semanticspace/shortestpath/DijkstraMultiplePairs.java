@@ -197,36 +197,37 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
         private PathResult next(int pairIndex, TraversalPredicate traversalPredicate, ImmutablePathResult.Builder pathResultBuilder) {
             var relationshipId = new MutableInt();
 
-            while (!queue.isEmpty() && running() && traversalState != EMIT_AND_STOP) {
-                var node = queue.pop();
-                var cost = queue.cost(node);
-                visited.set(node);
+            synchronized (queue) {
+                while (!queue.isEmpty() && running() && traversalState != EMIT_AND_STOP) {
+                    var node = queue.pop();
+                    var cost = queue.cost(node);
+                    visited.set(node);
 
-                progressTracker.logProgress();
+                    progressTracker.logProgress();
 
-                localRelationshipIterator.forEachRelationship(
-                        node,
-                        1.0D,
-                        (source, target, weight) -> {
-                            synchronized (relationshipFilter) {
-                                if (relationshipFilter.test(source, target, relationshipId.longValue())) {
-                                    traverseCount++;
-                                    int val = traverseMap.getOrDefault((long) (weight + cost), 0);
-                                    traverseMap.put((long) (weight + cost), ++val);
-                                    updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
+                    localRelationshipIterator.forEachRelationship(
+                            node,
+                            1.0D,
+                            (source, target, weight) -> {
+//                                synchronized (relationshipFilter) {
+                                    if (relationshipFilter.test(source, target, relationshipId.longValue())) {
+                                        traverseCount++;
+                                        int val = traverseMap.getOrDefault((long) (weight + cost), 0);
+                                        traverseMap.put((long) (weight + cost), ++val);
+                                        updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
+                                    }
+                                    relationshipId.increment();
+                                    return true;
                                 }
-                                relationshipId.increment();
-                                return true;
-                            }
-                        }
-                );
+//                            }
+                    );
 
-                traversalState = traversalPredicate.apply(node);
-                if (traversalState == EMIT_AND_STOP) {
-                    return pathResult(pairIndex, node, pathResultBuilder);
+                    traversalState = traversalPredicate.apply(node);
+                    if (traversalState == EMIT_AND_STOP) {
+                        return pathResult(pairIndex, node, pathResultBuilder);
+                    }
                 }
             }
-
 
             return PathResult.EMPTY;
         }
