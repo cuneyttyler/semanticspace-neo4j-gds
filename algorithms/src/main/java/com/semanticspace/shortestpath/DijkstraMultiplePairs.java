@@ -169,7 +169,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             this.sourceNode = sourceNode;
             this.targetNode = targetNode;
             this.relationshipFilter = relationshipFilter.clone();
-relationshipFilter
+
             queue.add(sourceNode, 0.0);
         }
 
