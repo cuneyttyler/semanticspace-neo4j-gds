@@ -207,13 +207,13 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                         node,
                         1.0D,
                         (source, target, weight) -> {
-                            synchronized (queue) {
+//                            synchronized (queue) {
 //                                if (relationshipFilter.test(source, target, relationshipId.longValue())) {
                                     traverseCount++;
                                     int val = traverseMap.getOrDefault((long) (weight + cost), 0);
                                     traverseMap.put((long) (weight + cost), ++val);
                                     updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
-                                }
+//                                }
                                 relationshipId.increment();
 //                            }
                             return true;
