@@ -156,6 +156,8 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         private final RelationshipIterator localRelationshipIterator;
 
+        private int iteration = 0;
+
         public PairTask(int pairIndex, long sourceNode, long targetNode) {
             this.pairIndex = pairIndex;
             this.traversalPredicate = (node) -> node == targetNode ? EMIT_AND_STOP : CONTINUE;
@@ -204,16 +206,29 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                         node,
                         1.0D,
                         (source, target, weight) -> {
+                            if(iteration == 0) {
+                                progressTracker.logMessage(pairIndex + ". " + localRelationshipIterator.);
+                                progressTracker.logMessage(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (cost+weight));
+                            }
                             updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
                             relationshipId.increment();
                             return true;
                         }
                 );
 
+                if(iteration++ == 0) {
+                    progressTracker.logMessage(pairIndex + ". Start node degree: " + relationshipId.intValue());
+                }
+
                 traversalState = traversalPredicate.apply(node);
                 if (traversalState == EMIT_AND_STOP) {
+                    progressTracker.logMessage(pairIndex + ". Returning Result");
                     return pathResult(pairIndex, node, pathResultBuilder);
                 }
+            }
+
+            if(queue.isEmpty()) {
+                progressTracker.logMessage(pairIndex + ". Queue is empty");
             }
 
 
