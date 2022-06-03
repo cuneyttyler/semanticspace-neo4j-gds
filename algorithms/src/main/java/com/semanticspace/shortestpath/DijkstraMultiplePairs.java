@@ -156,10 +156,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         private final RelationshipIterator localRelationshipIterator;
 
-        private int traverseCount = 0;
-
-        private Map<Long, Integer> traverseMap = new HashMap<>();
-
         public PairTask(int pairIndex, long sourceNode, long targetNode) {
             this.pairIndex = pairIndex;
             this.traversalPredicate = (node) -> node == targetNode ? EMIT_AND_STOP : CONTINUE;
@@ -208,16 +204,9 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                         node,
                         1.0D,
                         (source, target, weight) -> {
-                            synchronized (relationshipFilter) {
-                                if (relationshipFilter.test(source, target, relationshipId.longValue())) {
-                                    traverseCount++;
-                                    int val = traverseMap.getOrDefault((long) (weight + cost), 0);
-                                    traverseMap.put((long) (weight + cost), ++val);
-                                    updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
-                                }
-                                relationshipId.increment();
-                                return true;
-                            }
+                            updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
+                            relationshipId.increment();
+                            return true;
                         }
                 );
 
