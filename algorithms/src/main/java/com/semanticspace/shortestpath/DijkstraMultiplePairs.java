@@ -200,6 +200,10 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                 var cost = queue.cost(node);
                 visited.set(node);
 
+                if(iteration == 0) {
+                    progressTracker.logMessage(pairIndex + ". Node: ");
+                }
+
                 progressTracker.logProgress();
 
                 localRelationshipIterator.forEachRelationship(
