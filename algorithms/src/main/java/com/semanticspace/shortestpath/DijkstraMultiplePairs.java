@@ -228,18 +228,20 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                         node,
                         1.0D,
                         (source, target, weight) -> {
+                            synchronized (queue) {
 //                            if (relationshipFilter.test(source, target, relationshipId.longValue())) {
-                                traverseCount++;
-                                int val = traverseMap.getOrDefault((long)(weight + cost),0);
-                                traverseMap.put((long)(weight + cost), ++val);
-                                if (val % 100 == 0) {
-                                    progressTracker.logMessage(pairIndex + ". Traverse count for cost " + (weight + cost) + " with count " + val);
-                                }
+                                    traverseCount++;
+                                    int val = traverseMap.getOrDefault((long) (weight + cost), 0);
+                                    traverseMap.put((long) (weight + cost), ++val);
+                                    if (val % 100 == 0) {
+                                        progressTracker.logMessage(pairIndex + ". Traverse count for cost " + (weight + cost) + " with count " + val);
+                                    }
 //                                System.out.println(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
-                                progressTracker.logMessage(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
-                                updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
+//                                progressTracker.logMessage(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
+                                    updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
 //                            }
-                            relationshipId.increment();
+                                    relationshipId.increment();
+                                }
                             return true;
                         }
                 );
