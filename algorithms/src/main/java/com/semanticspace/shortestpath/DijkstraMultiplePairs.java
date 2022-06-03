@@ -8,6 +8,7 @@ import org.neo4j.gds.Algorithm;
 import org.neo4j.gds.api.Graph;
 import org.neo4j.gds.api.RelationshipIterator;
 import org.neo4j.gds.core.concurrency.ParallelUtil;
+import org.neo4j.gds.core.utils.TerminationFlag;
 import org.neo4j.gds.core.utils.mem.MemoryEstimation;
 import org.neo4j.gds.core.utils.mem.MemoryEstimations;
 import org.neo4j.gds.core.utils.paged.HugeLongLongMap;
@@ -24,7 +25,7 @@ import java.util.concurrent.ExecutorService;
 
 import static com.semanticspace.shortestpath.DijkstraMultiplePairs.TraversalState.CONTINUE;
 import static com.semanticspace.shortestpath.DijkstraMultiplePairs.TraversalState.EMIT_AND_STOP;
-import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static java.util.concurrent.TimeUnit.*;
 
 public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     public static final String DESCRIPTION_SOURCE_TARGET = "The Dijkstra shortest path algorithm computes the shortest (weighted) path between one node and any other node in the graph.";
@@ -49,7 +50,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     // path id increasing in order of exploration
     private long pathIndex;
     // returns true if the given relationship should be traversed
-    private RelationshipFilter relationshipFilter;
+    private RelationshipFilter relationshipFilter = (sourceId, targetId, relationshipId) -> true;
 
     private final ExecutorService executorService;
     private final int concurrency;
@@ -113,7 +114,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     int counter = 0;
 
     public DijkstraMultiplePairs withRelationshipFilter(RelationshipFilter relationshipFilter) {
-        this.relationshipFilter = relationshipFilter;
+        this.relationshipFilter = this.relationshipFilter.and(relationshipFilter);
         return this;
     }
 
@@ -152,23 +153,25 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
         private final long sourceNode;
 
         private final long targetNode;
+
         private final RelationshipIterator localRelationshipIterator;
 
-        private RelationshipFilter relationshipFilter = (sourceId, targetId, relationshipId) -> true;
+        private int traverseCount = 0;
+
+        private Map<Long, Integer> traverseMap = new HashMap<>();
 
         public PairTask(int pairIndex, long sourceNode, long targetNode) {
             this.pairIndex = pairIndex;
+            this.traversalPredicate = (node) -> node == targetNode ? EMIT_AND_STOP : CONTINUE;
+            this.traversalState = CONTINUE;
             this.predecessors = new HugeLongLongMap();
             this.localRelationshipIterator = graph.concurrentCopy();
             this.queue = HugeLongPriorityQueue.min(graph.nodeCount());
             this.visited = new BitSet();
             this.sourceNode = sourceNode;
             this.targetNode = targetNode;
-            this.traversalPredicate = (node) -> node == this.targetNode ? EMIT_AND_STOP : CONTINUE;
-            this.traversalState = CONTINUE;
-            this.relationshipFilter = this.relationshipFilter.and(relationshipFilter);
 
-            this.queue.add(sourceNode, 0.0);
+            queue.add(sourceNode, 0.0);
         }
 
         @Override
@@ -178,44 +181,51 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             var pathResultBuilder = ImmutablePathResult.builder();
 
             List<PathResult> paths = new ArrayList<>();
-            while (true) {
-                PathResult path = next(this.pairIndex, traversalPredicate, pathResultBuilder);
 
-                if (path == PathResult.EMPTY) {
-                    break;
-                } else {
-                    paths.add(path);
-                }
+            PathResult path = next(this.pairIndex, traversalPredicate, pathResultBuilder);
+            while (path != PathResult.EMPTY) {
+                paths.add(path);
+                path = next(this.pairIndex, traversalPredicate, pathResultBuilder);
             }
 
-            allPaths.addAll(paths);
+            synchronized (allPaths) {
+                allPaths.addAll(paths);
+            }
+
         }
 
         private PathResult next(int pairIndex, TraversalPredicate traversalPredicate, ImmutablePathResult.Builder pathResultBuilder) {
             var relationshipId = new MutableInt();
 
-            while (!queue.isEmpty() && running() && traversalState != EMIT_AND_STOP) {
-                var node = queue.pop();
-                var cost = queue.cost(node);
-                visited.set(node);
+            synchronized (queue) {
+                while (!queue.isEmpty() && running() && traversalState != EMIT_AND_STOP) {
+                    var node = queue.pop();
+                    var cost = queue.cost(node);
+                    visited.set(node);
 
-                progressTracker.logProgress();
+                    progressTracker.logProgress();
 
-                localRelationshipIterator.forEachRelationship(
-                        node,
-                        1.0D,
-                        (source, target, weight) -> {
-                            if (relationshipFilter.test(source, target, relationshipId.longValue())) {
-                                updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
+                    localRelationshipIterator.forEachRelationship(
+                            node,
+                            1.0D,
+                            (source, target, weight) -> {
+                                synchronized (relationshipFilter) {
+                                    if (relationshipFilter.test(source, target, relationshipId.longValue())) {
+                                        traverseCount++;
+                                        int val = traverseMap.getOrDefault((long) (weight + cost), 0);
+                                        traverseMap.put((long) (weight + cost), ++val);
+                                        updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
+                                    }
+                                    relationshipId.increment();
+                                    return true;
+                                }
                             }
-                            relationshipId.increment();
-                            return true;
-                        }
-                );
+                    );
 
-                traversalState = traversalPredicate.apply(node);
-                if (traversalState == EMIT_AND_STOP) {
-                    return pathResult(pairIndex, node, pathResultBuilder);
+                    traversalState = traversalPredicate.apply(node);
+                    if (traversalState == EMIT_AND_STOP) {
+                        return pathResult(pairIndex, node, pathResultBuilder);
+                    }
                 }
             }
 
@@ -255,7 +265,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             // We backtrack until we reach the source node.
             // The source node is either given by Dijkstra
             // or adjusted by Yen's algorithm.
-            var pathStart = sourceNode;
+            var pathStart = sourceNodes.get(pairIndex);
             var lastNode = target;
             var prevNode = lastNode;
 
