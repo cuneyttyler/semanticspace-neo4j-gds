@@ -213,7 +213,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                         1.0D,
                         (source, target, weight) -> {
                             synchronized (queue) {
-//                                if (relationshipFilter.test(source, target, relationshipId.longValue())) {
+                                if (relationshipFilter.test(source, target, relationshipId.longValue())) {
                                     traverseCount++;
                                     int val = traverseMap.getOrDefault((long) (weight + cost), 0);
                                     traverseMap.put((long) (weight + cost), ++val);
@@ -223,7 +223,9 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 //                                System.out.println(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
 //                                progressTracker.logMessage(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
                                     updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
-//                                }
+                                } else {
+                                    progressTracker.logMessage("Relationship FILTER ELSE");
+                                }
                                 relationshipId.increment();
                             }
                             return true;
