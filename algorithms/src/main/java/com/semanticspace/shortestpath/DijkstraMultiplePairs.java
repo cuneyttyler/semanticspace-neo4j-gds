@@ -177,7 +177,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
         public PairTask(int pairIndex, long sourceNode, long targetNode) {
             this.pairIndex = pairIndex;
             this.predecessors = new HugeLongLongMap();
-            this.localRelationshipIterator = graph;
+            this.localRelationshipIterator = graph.concurrentCopy();
             this.queue = HugeLongPriorityQueue.min(graph.nodeCount());
             this.visited = new BitSet();
             this.sourceNode = sourceNode;
