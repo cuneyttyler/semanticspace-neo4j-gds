@@ -6,6 +6,7 @@ import com.carrotsearch.hppc.LongArrayDeque;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.neo4j.gds.Algorithm;
 import org.neo4j.gds.api.Graph;
+import org.neo4j.gds.api.RelationshipIterator;
 import org.neo4j.gds.core.concurrency.ParallelUtil;
 import org.neo4j.gds.core.utils.mem.MemoryEstimation;
 import org.neo4j.gds.core.utils.mem.MemoryEstimations;
@@ -122,14 +123,14 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         List<PairTask> taskList = new ArrayList<>();
         for (int i = 0; i < sourceNodes.size(); i++) {
-            PairTask task = new PairTask(i, sourceNodes.get(i),targetNodes.get(i));
+            PairTask task = new PairTask(i, sourceNodes.get(i), targetNodes.get(i));
             taskList.add(task);
         }
 
         progressTracker.beginSubTask();
         ParallelUtil.runWithConcurrency(concurrency, taskList, 1, MICROSECONDS, terminationFlag, executorService);
 
-        allPaths.sort((o1,o2) -> o1.index() > o2.index() ? 1 : -1);
+        allPaths.sort((o1, o2) -> o1.index() > o2.index() ? 1 : -1);
         return new DijkstraResult(allPaths.stream(), progressTracker::endSubTask);
     }
 
@@ -141,7 +142,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         private final TraversalPredicate traversalPredicate;
 
-        private  TraversalState traversalState;
+        private TraversalState traversalState;
         private final HugeLongLongMap predecessors;
 
         private final HugeLongPriorityQueue queue;
@@ -152,7 +153,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         private final long targetNode;
 
-        private final Graph localRelationshipIterator;
+        private final RelationshipIterator localRelationshipIterator;
 
         private int traverseCount = 0;
 
@@ -200,51 +201,30 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                 var cost = queue.cost(node);
                 visited.set(node);
 
-//                progressTracker.logMessage(pairIndex + ".Popped node " + node + " with cost " + cost);
-
-                if(traverseCount % 10000 == 0) {
-                    progressTracker.logMessage(pairIndex + ". traversed " + traverseCount);
-                }
-
-                progressTracker.logProgress(localRelationshipIterator.degree(node));
+                progressTracker.logProgress();
 
                 localRelationshipIterator.forEachRelationship(
                         node,
                         1.0D,
                         (source, target, weight) -> {
                             synchronized (queue) {
-//                            if (relationshipFilter.test(source, target, relationshipId.longValue())) {
+                                if (relationshipFilter.test(source, target, relationshipId.longValue())) {
                                     traverseCount++;
                                     int val = traverseMap.getOrDefault((long) (weight + cost), 0);
                                     traverseMap.put((long) (weight + cost), ++val);
-                                    if (val % 100 == 0) {
-                                        progressTracker.logMessage(pairIndex + ". Traverse count for cost " + (weight + cost) + " with count " + val);
-                                    }
-//                                System.out.println(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
-//                                progressTracker.logMessage(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
                                     updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
-//                            }
-                                    relationshipId.increment();
                                 }
+                                relationshipId.increment();
+                            }
                             return true;
                         }
                 );
 
-
-                // Using the current node, decide if we need to emit a path and continue the traversal.
-//                TraversalState state = traversalStates.get(pairIndex);
-//                // progressTracker.logMessage(pairIndex + ". State: " + state);
-//                // progressTracker.logMessage(pairIndex + ". TargetNode = " + targetNodes.get(pairIndex));
-
-                traversalState =  traversalPredicate.apply(node);
+                traversalState = traversalPredicate.apply(node);
                 if (traversalState == EMIT_AND_STOP) {
-                    progressTracker.logMessage(pairIndex + ". Returning result");
                     return pathResult(pairIndex, node, pathResultBuilder);
                 }
             }
-
-             progressTracker.logMessage(pairIndex + ". QueueIsEmpty: " + queue.isEmpty());
-            System.out.println(pairIndex + ". QueueIsEmpty: " + queue.isEmpty());
 
             return PathResult.EMPTY;
         }
@@ -258,7 +238,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             if (!queue.containsElement(target)) {
                 // we see target for the first time
                 queue.add(target, newCost);
-//                System.out.println("Contains? " + predecessors.containsKey(target));
                 predecessors.put(target, source);
                 if (trackRelationships) {
                     relationships.put(target, relationshipId);
