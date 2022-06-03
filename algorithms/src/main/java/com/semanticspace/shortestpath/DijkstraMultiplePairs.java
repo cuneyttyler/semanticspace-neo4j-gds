@@ -50,7 +50,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     // path id increasing in order of exploration
     private long pathIndex;
     // returns true if the given relationship should be traversed
-    private RelationshipFilter relationshipFilter;
+    private RelationshipFilter relationshipFilter = (sourceId, targetId, relationshipId) -> true;
 
     private final ExecutorService executorService;
     private final int concurrency;
@@ -156,7 +156,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         private final RelationshipIterator localRelationshipIterator;
 
-        private RelationshipFilter relationshipFilter  = (sourceId, targetId, relationshipId) -> true;;
+        private RelationshipFilter relationshipFilter;
 
         public PairTask(int pairIndex, long sourceNode, long targetNode, RelationshipFilter relationshipFilter) {
             this.pairIndex = pairIndex;
@@ -168,7 +168,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             this.visited = new BitSet();
             this.sourceNode = sourceNode;
             this.targetNode = targetNode;
-            this.relationshipFilter = this.relationshipFilter.and(relationshipFilter);
+            this.relationshipFilter = relationshipFilter;
 
             queue.add(sourceNode, 0.0);
         }
