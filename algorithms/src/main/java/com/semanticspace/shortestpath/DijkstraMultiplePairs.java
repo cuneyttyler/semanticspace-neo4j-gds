@@ -168,7 +168,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             this.visited = new BitSet();
             this.sourceNode = sourceNode;
             this.targetNode = targetNode;
-            this.relationshipFilter = relationshipFilter.clone();
+            this.relationshipFilter = relationshipFilter;
 
             queue.add(sourceNode, 0.0);
         }
@@ -313,17 +313,13 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     }
 
     @FunctionalInterface
-    public interface RelationshipFilter extends Cloneable {
+    public interface RelationshipFilter {
         boolean test(long source, long target, long relationshipId);
 
         default RelationshipFilter and(RelationshipFilter after) {
             return (sourceNodeId, targetNodeId, relationshipId) ->
                     this.test(sourceNodeId, targetNodeId, relationshipId) &&
                             after.test(sourceNodeId, targetNodeId, relationshipId);
-        }
-
-        default RelationshipFilter clone() {
-            return this.clone();
         }
     }
 
