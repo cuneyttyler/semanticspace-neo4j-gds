@@ -34,7 +34,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static com.semanticspace.shortestpath.DijkstraMultiplePairs.TraversalState.CONTINUE;
-import static com.semanticspace.shortestpath.DijkstraMultiplePairs.TraversalState.EMIT_AND_CONTINUE;
 import static com.semanticspace.shortestpath.DijkstraMultiplePairs.TraversalState.EMIT_AND_STOP;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
