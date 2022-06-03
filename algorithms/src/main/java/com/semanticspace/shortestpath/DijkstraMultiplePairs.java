@@ -50,7 +50,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     // path id increasing in order of exploration
     private long pathIndex;
     // returns true if the given relationship should be traversed
-    private RelationshipFilter relationshipFilter = (sourceId, targetId, relationshipId) -> true;
+    private RelationshipFilter relationshipFilter;
 
     private final ExecutorService executorService;
     private final int concurrency;
@@ -114,7 +114,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     int counter = 0;
 
     public DijkstraMultiplePairs withRelationshipFilter(RelationshipFilter relationshipFilter) {
-        this.relationshipFilter = this.relationshipFilter.and(relationshipFilter);
+        this.relationshipFilter = relationshipFilter;
         return this;
     }
 
@@ -156,11 +156,10 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         private final RelationshipIterator localRelationshipIterator;
 
-        private int traverseCount = 0;
+        private RelationshipFilter relationshipFilter = (sourceId, targetId, relationshipId) -> true;
 
-        private Map<Long, Integer> traverseMap = new HashMap<>();
 
-        public PairTask(int pairIndex, long sourceNode, long targetNode) {
+        public PairTask(int pairIndex, long sourceNode, long targetNode, RelationshipFilter relationshipFilter) {
             this.pairIndex = pairIndex;
             this.traversalPredicate = (node) -> node == targetNode ? EMIT_AND_STOP : CONTINUE;
             this.traversalState = CONTINUE;
@@ -170,6 +169,10 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             this.visited = new BitSet();
             this.sourceNode = sourceNode;
             this.targetNode = targetNode;
+
+            if(relationshipFilter != null) {
+                this.relationshipFilter = this.relationshipFilter.and(relationshipFilter);
+            }
 
             queue.add(sourceNode, 0.0);
         }
@@ -210,9 +213,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                             1.0D,
                             (source, target, weight) -> {
                                 if (relationshipFilter.test(source, target, relationshipId.longValue())) {
-                                    traverseCount++;
-                                    int val = traverseMap.getOrDefault((long) (weight + cost), 0);
-                                    traverseMap.put((long) (weight + cost), ++val);
                                     updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
                                 }
                                 relationshipId.increment();
