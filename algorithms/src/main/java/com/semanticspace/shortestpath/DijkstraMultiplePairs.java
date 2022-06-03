@@ -168,8 +168,8 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             this.visited = new BitSet();
             this.sourceNode = sourceNode;
             this.targetNode = targetNode;
-            this.relationshipFilter = relationshipFilter;
-
+            this.relationshipFilter = relationshipFilter.clone();
+            relationshipFilter
             queue.add(sourceNode, 0.0);
         }
 
@@ -208,11 +208,13 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                             node,
                             1.0D,
                             (source, target, weight) -> {
+//                                synchronized (relationshipFilter) {
                                 if (relationshipFilter.test(source, target, relationshipId.longValue())) {
                                     updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
                                 }
                                 relationshipId.increment();
                                 return true;
+//                                }
                             }
 
                     );
@@ -260,7 +262,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             // We backtrack until we reach the source node.
             // The source node is either given by Dijkstra
             // or adjusted by Yen's algorithm.
-            var pathStart = sourceNode;
+            var pathStart = sourceNodes.get(pairIndex);
             var lastNode = target;
             var prevNode = lastNode;
 
@@ -295,6 +297,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
     }
 
+
     @Override
     public void release() {
         // We do not release, since the result
@@ -313,13 +316,17 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     }
 
     @FunctionalInterface
-    public interface RelationshipFilter {
+    public interface RelationshipFilter extends Cloneable {
         boolean test(long source, long target, long relationshipId);
 
         default RelationshipFilter and(RelationshipFilter after) {
             return (sourceNodeId, targetNodeId, relationshipId) ->
                     this.test(sourceNodeId, targetNodeId, relationshipId) &&
                             after.test(sourceNodeId, targetNodeId, relationshipId);
+        }
+
+        default RelationshipFilter clone() {
+            return this.clone();
         }
     }
 
