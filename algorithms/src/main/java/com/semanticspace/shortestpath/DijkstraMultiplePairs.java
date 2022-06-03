@@ -154,7 +154,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         private final long targetNode;
 
-        private final RelationshipIterator localRelationshipIterator;
+        private final Graph localRelationshipIterator;
 
         private int iteration = 0;
 
@@ -208,6 +208,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
                 localRelationshipIterator.forEachRelationship(
                         node,
+                        1.0D,
                         (source, target, weight) -> {
                             if(iteration == 0) {
                                 progressTracker.logMessage(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (cost+weight));
@@ -219,7 +220,8 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                 );
 
                 if(iteration++ == 0) {
-                    progressTracker.logMessage(pairIndex + ". Start node degree: " + relationshipId.intValue());
+//                    progressTracker.logMessage(pairIndex + ". Start node degree: " + relationshipId.intValue());
+                    progressTracker.logMessage(pairIndex + ". Start node degree: " + graph.degree(node));
                 }
 
                 traversalState = traversalPredicate.apply(node);
