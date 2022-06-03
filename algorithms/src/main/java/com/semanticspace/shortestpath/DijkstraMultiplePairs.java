@@ -208,13 +208,11 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                             node,
                             1.0D,
                             (source, target, weight) -> {
-//                                synchronized (relationshipFilter) {
-                                    if (relationshipFilter.test(source, target, relationshipId.longValue())) {
-                                        updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
-                                    }
-                                    relationshipId.increment();
-                                    return true;
-//                                }
+                                if (relationshipFilter.test(source, target, relationshipId.longValue())) {
+                                    updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
+                                }
+                                relationshipId.increment();
+                                return true;
                             }
 
                     );
@@ -262,7 +260,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             // We backtrack until we reach the source node.
             // The source node is either given by Dijkstra
             // or adjusted by Yen's algorithm.
-            var pathStart = sourceNodes.get(pairIndex);
+            var pathStart = sourceNode;
             var lastNode = target;
             var prevNode = lastNode;
 
@@ -296,7 +294,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
         }
 
     }
-
 
     @Override
     public void release() {
