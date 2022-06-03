@@ -265,7 +265,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             // We backtrack until we reach the source node.
             // The source node is either given by Dijkstra
             // or adjusted by Yen's algorithm.
-            var pathStart = sourceNodes.get(pairIndex);
+            var pathStart = sourceNode;
             var lastNode = target;
             var prevNode = lastNode;
 
