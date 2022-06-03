@@ -169,6 +169,8 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             this.sourceNode = sourceNode;
             this.targetNode = targetNode;
 
+            progressTracker.logMessage(pairIndex + ". Source Node Degree: " + graph.degree(sourceNode));
+
             queue.add(sourceNode, 0.0);
         }
 
