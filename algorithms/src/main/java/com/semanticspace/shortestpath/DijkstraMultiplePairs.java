@@ -6,6 +6,7 @@ import com.carrotsearch.hppc.LongArrayDeque;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.neo4j.gds.Algorithm;
 import org.neo4j.gds.api.Graph;
+import org.neo4j.gds.api.RelationshipIterator;
 import org.neo4j.gds.core.concurrency.ParallelUtil;
 import org.neo4j.gds.core.utils.mem.MemoryEstimation;
 import org.neo4j.gds.core.utils.mem.MemoryEstimations;
@@ -152,7 +153,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         private final long targetNode;
 
-        private final Graph localRelationshipIterator;
+        private final RelationshipIterator localRelationshipIterator;
 
         private int traverseCount = 0;
 
@@ -206,7 +207,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                     progressTracker.logMessage(pairIndex + ". traversed " + traverseCount);
                 }
 
-                progressTracker.logProgress(localRelationshipIterator.degree(node));
+                progressTracker.logProgress();
 
                 localRelationshipIterator.forEachRelationship(
                         node,
@@ -223,8 +224,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 //                                System.out.println(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
 //                                progressTracker.logMessage(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
                                     updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
-                                } else {
-                                    progressTracker.logMessage("Relationship FILTER ELSE");
                                 }
                                 relationshipId.increment();
                             }
