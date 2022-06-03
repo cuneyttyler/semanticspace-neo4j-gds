@@ -156,7 +156,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         private final RelationshipIterator localRelationshipIterator;
 
-        private RelationshipFilter relationshipFilter;
+//        private RelationshipFilter relationshipFilter;
 
         public PairTask(int pairIndex, long sourceNode, long targetNode, RelationshipFilter relationshipFilter) {
             this.pairIndex = pairIndex;
@@ -168,7 +168,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             this.visited = new BitSet();
             this.sourceNode = sourceNode;
             this.targetNode = targetNode;
-            this.relationshipFilter = relationshipFilter;
+//            this.relationshipFilter = relationshipFilter;
 
             queue.add(sourceNode, 0.0);
         }
