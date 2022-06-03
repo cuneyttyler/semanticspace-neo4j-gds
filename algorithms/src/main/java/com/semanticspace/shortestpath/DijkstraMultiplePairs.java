@@ -202,7 +202,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
 //                progressTracker.logMessage(pairIndex + ".Popped node " + node + " with cost " + cost);
 
-                if(traverseCount % 1000 == 0) {
+                if(traverseCount % 10000 == 0) {
                     progressTracker.logMessage(pairIndex + ". traversed " + traverseCount);
                 }
 
