@@ -4,12 +4,8 @@ import com.carrotsearch.hppc.BitSet;
 import com.carrotsearch.hppc.DoubleArrayDeque;
 import com.carrotsearch.hppc.LongArrayDeque;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.math3.util.Pair;
 import org.neo4j.gds.Algorithm;
 import org.neo4j.gds.api.Graph;
-import org.neo4j.gds.api.RelationshipCursor;
-import org.neo4j.gds.api.RelationshipIterator;
-import org.neo4j.gds.betweenness.BetweennessCentrality;
 import org.neo4j.gds.core.concurrency.ParallelUtil;
 import org.neo4j.gds.core.utils.mem.MemoryEstimation;
 import org.neo4j.gds.core.utils.mem.MemoryEstimations;
@@ -23,15 +19,7 @@ import org.neo4j.gds.paths.dijkstra.DijkstraResult;
 
 import java.util.*;
 import java.util.function.LongToDoubleFunction;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.concurrent.atomic.AtomicReference;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import static com.semanticspace.shortestpath.DijkstraMultiplePairs.TraversalState.CONTINUE;
 import static com.semanticspace.shortestpath.DijkstraMultiplePairs.TraversalState.EMIT_AND_STOP;
@@ -229,7 +217,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                                     traverseCount++;
                                     int val = traverseMap.getOrDefault((long) (weight + cost), 0);
                                     traverseMap.put((long) (weight + cost), ++val);
-                                    if (val % 100000 == 0) {
+                                    if (val % 100 == 0) {
                                         progressTracker.logMessage(pairIndex + ". Traverse count for cost " + (weight + cost) + " with count " + val);
                                     }
 //                                System.out.println(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
