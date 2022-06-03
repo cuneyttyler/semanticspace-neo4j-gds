@@ -48,6 +48,9 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
     // path id increasing in order of exploration
     private long pathIndex;
+    // returns true if the given relationship should be traversed
+    private RelationshipFilter relationshipFilter = (sourceId, targetId, relationshipId) -> true;
+
     private final ExecutorService executorService;
     private final int concurrency;
 
@@ -108,6 +111,13 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     }
 
     int counter = 0;
+
+    public DijkstraMultiplePairs withRelationshipFilter(RelationshipFilter relationshipFilter) {
+        this.relationshipFilter = this.relationshipFilter.and(relationshipFilter);
+        return this;
+    }
+
+
     public DijkstraResult compute() {
         int index = 0;
 
@@ -191,7 +201,9 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                         node,
                         1.0D,
                         (source, target, weight) -> {
-                            updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
+                            if (relationshipFilter.test(source, target, relationshipId.longValue())) {
+                                updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
+                            }
                             relationshipId.increment();
                             return true;
                         }
@@ -290,6 +302,17 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     @FunctionalInterface
     public interface TraversalPredicate {
         TraversalState apply(long nodeId);
+    }
+
+    @FunctionalInterface
+    public interface RelationshipFilter {
+        boolean test(long source, long target, long relationshipId);
+
+        default RelationshipFilter and(RelationshipFilter after) {
+            return (sourceNodeId, targetNodeId, relationshipId) ->
+                    this.test(sourceNodeId, targetNodeId, relationshipId) &&
+                            after.test(sourceNodeId, targetNodeId, relationshipId);
+        }
     }
 
     private static HugeLongPriorityQueue minPriorityQueue(long capacity, HeuristicFunction heuristicFunction) {
