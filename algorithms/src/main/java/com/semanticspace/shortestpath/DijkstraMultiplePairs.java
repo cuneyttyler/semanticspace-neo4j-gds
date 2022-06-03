@@ -128,6 +128,8 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             taskList.add(task);
         }
 
+        progressTracker.logMessage("0. Source Node Degree: " + graph.degree(sourceNodes.get(0)));
+
         progressTracker.beginSubTask();
         ParallelUtil.runWithConcurrency(concurrency, taskList, 1, MICROSECONDS, terminationFlag, executorService);
 
@@ -168,8 +170,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             this.visited = new BitSet();
             this.sourceNode = sourceNode;
             this.targetNode = targetNode;
-
-            progressTracker.logMessage(pairIndex + ". Source Node Degree: " + graph.degree(sourceNode));
 
             queue.add(sourceNode, 0.0);
         }
