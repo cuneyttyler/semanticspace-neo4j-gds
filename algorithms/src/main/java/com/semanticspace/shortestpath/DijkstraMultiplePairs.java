@@ -123,7 +123,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         List<PairTask> taskList = new ArrayList<>();
         for (int i = 0; i < sourceNodes.size(); i++) {
-            PairTask task = new PairTask(i, sourceNodes.get(i), targetNodes.get(i));
+            PairTask task = new PairTask(i, sourceNodes.get(i), targetNodes.get(i), relationshipFilter);
             taskList.add(task);
         }
 
@@ -156,7 +156,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         private RelationshipFilter relationshipFilter = (sourceId, targetId, relationshipId) -> true;
 
-        public PairTask(int pairIndex, long sourceNode, long targetNode) {
+        public PairTask(int pairIndex, long sourceNode, long targetNode,RelationshipFilter relationshipFilter) {
             this.pairIndex = pairIndex;
             this.predecessors = new HugeLongLongMap();
             this.localRelationshipIterator = graph.concurrentCopy();
@@ -166,7 +166,9 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             this.targetNode = targetNode;
             this.traversalPredicate = (node) -> node == this.targetNode ? EMIT_AND_STOP : CONTINUE;
             this.traversalState = CONTINUE;
-            this.relationshipFilter = this.relationshipFilter.and(relationshipFilter);
+
+            if(relationshipFilter != null)
+                this.relationshipFilter = this.relationshipFilter.and(relationshipFilter);
 
             this.queue.add(sourceNode, 0.0);
         }
@@ -309,7 +311,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     }
 
     @FunctionalInterface
-    public interface RelationshipFilter {
+    public interface RelationshipFilter extends Cloneable{
         boolean test(long source, long target, long relationshipId);
 
         default RelationshipFilter and(RelationshipFilter after) {
