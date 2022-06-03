@@ -6,9 +6,7 @@ import com.carrotsearch.hppc.LongArrayDeque;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.neo4j.gds.Algorithm;
 import org.neo4j.gds.api.Graph;
-import org.neo4j.gds.api.RelationshipIterator;
 import org.neo4j.gds.core.concurrency.ParallelUtil;
-import org.neo4j.gds.core.utils.TerminationFlag;
 import org.neo4j.gds.core.utils.mem.MemoryEstimation;
 import org.neo4j.gds.core.utils.mem.MemoryEstimations;
 import org.neo4j.gds.core.utils.paged.HugeLongLongMap;
@@ -128,8 +126,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             taskList.add(task);
         }
 
-        progressTracker.logMessage("0. Source Node Degree: " + graph.degree(graph.toMappedNodeId(sourceNodes.get(0))));
-
         progressTracker.beginSubTask();
         ParallelUtil.runWithConcurrency(concurrency, taskList, 1, MICROSECONDS, terminationFlag, executorService);
 
@@ -154,11 +150,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         private final long sourceNode;
 
-        private final long targetNode;
-
         private final Graph localRelationshipIterator;
-
-        private int iteration = 0;
 
         public PairTask(int pairIndex, long sourceNode, long targetNode) {
             this.pairIndex = pairIndex;
@@ -169,7 +161,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             this.queue = HugeLongPriorityQueue.min(graph.nodeCount());
             this.visited = new BitSet();
             this.sourceNode = sourceNode;
-            this.targetNode = targetNode;
 
             queue.add(sourceNode, 0.0);
         }
@@ -191,7 +182,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             synchronized (allPaths) {
                 allPaths.addAll(paths);
             }
-
         }
 
         private PathResult next(int pairIndex, TraversalPredicate traversalPredicate, ImmutablePathResult.Builder pathResultBuilder) {
@@ -202,41 +192,25 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                 var cost = queue.cost(node);
                 visited.set(node);
 
-                if(iteration == 0) {
-                    progressTracker.logMessage(pairIndex + ". Node: " + node);
-                }
-
-                progressTracker.logProgress();
+                progressTracker.logProgress(graph.degree(node));
 
                 localRelationshipIterator.forEachRelationship(
                         node,
                         1.0D,
                         (source, target, weight) -> {
-                            if(iteration == 0) {
-                                progressTracker.logMessage(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (cost+weight));
+                            if (relationshipFilter.test(source, target, relationshipId.longValue())) {
+                                updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
                             }
-                            updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
                             relationshipId.increment();
                             return true;
                         }
                 );
 
-                if(iteration++ == 0) {
-//                    progressTracker.logMessage(pairIndex + ". Start node degree: " + relationshipId.intValue());
-                    progressTracker.logMessage(pairIndex + ". Start node degree: " + graph.degree(node));
-                }
-
                 traversalState = traversalPredicate.apply(node);
                 if (traversalState == EMIT_AND_STOP) {
-                    progressTracker.logMessage(pairIndex + ". Returning Result");
                     return pathResult(pairIndex, node, pathResultBuilder);
                 }
             }
-
-            if(queue.isEmpty()) {
-                progressTracker.logMessage(pairIndex + ". Queue is empty");
-            }
-
 
             return PathResult.EMPTY;
         }
