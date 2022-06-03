@@ -233,7 +233,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                                     traverseCount++;
                                     int val = traverseMap.getOrDefault((long) (weight + cost), 0);
                                     traverseMap.put((long) (weight + cost), ++val);
-                                    if (val % 100 == 0) {
+                                    if (val % 10000 == 0) {
                                         progressTracker.logMessage(pairIndex + ". Traverse count for cost " + (weight + cost) + " with count " + val);
                                     }
 //                                System.out.println(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
