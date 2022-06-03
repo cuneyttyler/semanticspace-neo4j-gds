@@ -169,7 +169,10 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
         private final long sourceNode;
 
         private final long targetNode;
+
         private final Graph localRelationshipIterator;
+
+        private int traverseCount = 0;
 
         public PairTask(int pairIndex, long sourceNode, long targetNode) {
             this.pairIndex = pairIndex;
@@ -213,6 +216,10 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
 //                progressTracker.logMessage(pairIndex + ".Popped node " + node + " with cost " + cost);
 
+                if(traverseCount % 1000 == 0) {
+                    progressTracker.logMessage(pairIndex + ". traversed " + traverseCount);
+                }
+
                 progressTracker.logProgress(localRelationshipIterator.degree(node));
 
                 localRelationshipIterator.forEachRelationship(
@@ -220,6 +227,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                         1.0D,
                         (source, target, weight) -> {
                             if (relationshipFilter.test(source, target, relationshipId.longValue())) {
+                                traverseCount++;
                                 System.out.println(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
                                 updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
                             }
