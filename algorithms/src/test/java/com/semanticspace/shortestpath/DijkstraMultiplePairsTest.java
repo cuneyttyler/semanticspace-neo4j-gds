@@ -131,29 +131,29 @@ final class DijkstraMultiplePairsTest {
             assertEquals(expected, path);
         }
 
-//        @ParameterizedTest
-//        @MethodSource("predicatesAndPaths")
-//        void sourceTargetWithRelationshipFilter(DijkstraMultiplePairs.RelationshipFilter relationshipFilter, double[] expectedCosts, List<String> expectedPath) {
-//            var expected = expected(idFunction, 0, expectedCosts, expectedPath.toArray(String[]::new));
-//
-//            var sourceNode = idFunction.of(expectedPath.get(0));
-//            var targetNode = idFunction.of(expectedPath.get(expectedPath.size() - 1));
-//
-//            var config = defaultMultiplePairsConfigBuilder()
-//                    .sourceNode(sourceNode)
-//                    .targetNode(targetNode)
-//                    .build();
-//
-//            var dijkstra = DijkstraMultiplePairs
-//                    .createInstance(graph, config, Optional.empty(), ProgressTracker.NULL_TRACKER)
-//                    .withRelationshipFilter(relationshipFilter);
-//            var paths = dijkstra
-//                    .compute()
-//                    .findFirst()
-//                    .get();
-//
-//            assertEquals(expected, paths);
-//        }
+        @ParameterizedTest
+        @MethodSource("predicatesAndPaths")
+        void sourceTargetWithRelationshipFilter(DijkstraMultiplePairs.RelationshipFilter relationshipFilter, double[] expectedCosts, List<String> expectedPath) {
+            var expected = expected(idFunction, 0, expectedCosts, expectedPath.toArray(String[]::new));
+
+            var sourceNode = idFunction.of(expectedPath.get(0));
+            var targetNode = idFunction.of(expectedPath.get(expectedPath.size() - 1));
+
+            var config = defaultMultiplePairsConfigBuilder()
+                    .sourceNode(sourceNode)
+                    .targetNode(targetNode)
+                    .build();
+
+            var dijkstra = DijkstraMultiplePairs
+                    .createInstance(graph, config, Optional.empty(), ProgressTracker.NULL_TRACKER)
+                    .withRelationshipFilter(relationshipFilter);
+            var paths = dijkstra
+                    .compute()
+                    .findFirst()
+                    .get();
+
+            assertEquals(expected, paths);
+        }
 
 //        @Test
 //        void sourceTargetWithRelationshipIds() {
