@@ -124,11 +124,11 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         List<PairTask> taskList = new ArrayList<>();
         for (int i = 0; i < sourceNodes.size(); i++) {
-            PairTask task = new PairTask(i, sourceNodes.get(i), targetNodes.get(i));
+            PairTask task = new PairTask(i, graph.toMappedNodeId(sourceNodes.get(i)), graph.toMappedNodeId(targetNodes.get(i)));
             taskList.add(task);
         }
 
-        progressTracker.logMessage("0. Source Node Degree: " + graph.degree(sourceNodes.get(0)));
+        progressTracker.logMessage("0. Source Node Degree: " + graph.degree(graph.toMappedNodeId(sourceNodes.get(0))));
 
         progressTracker.beginSubTask();
         ParallelUtil.runWithConcurrency(concurrency, taskList, 1, MICROSECONDS, terminationFlag, executorService);
