@@ -209,7 +209,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                             node,
                             1.0D,
                             (source, target, weight) -> {
-//                                synchronized (relationshipFilter) {
+                                synchronized (relationshipFilter) {
                                     if (relationshipFilter.test(source, target, relationshipId.longValue())) {
                                         traverseCount++;
                                         int val = traverseMap.getOrDefault((long) (weight + cost), 0);
@@ -219,7 +219,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                                     relationshipId.increment();
                                     return true;
                                 }
-//                            }
+                            }
                     );
 
                     traversalState = traversalPredicate.apply(node);
