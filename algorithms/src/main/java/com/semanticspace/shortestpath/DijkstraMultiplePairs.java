@@ -226,11 +226,11 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                         node,
                         1.0D,
                         (source, target, weight) -> {
-                            if (relationshipFilter.test(source, target, relationshipId.longValue())) {
+//                            if (relationshipFilter.test(source, target, relationshipId.longValue())) {
                                 traverseCount++;
                                 System.out.println(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
                                 updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
-                            }
+//                            }
                             relationshipId.increment();
                             return true;
                         }

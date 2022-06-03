@@ -347,19 +347,23 @@ final class DijkstraMultiplePairsTest {
         @Test
         void runTest() {
             var expected = Arrays.asList(
-                    expected(idFunction, 0, new double[]{0.0, 1.0}, "SteveJobs", "Apple"),
-                    expected(idFunction, 1, new double[]{0.0, 1.0, 2.0, 3.0, 4.0}, "SteveJobs", "Apple", "AppleTV", "HDMI", "Microsoft"),
-                    expected(idFunction, 2, new double[]{0.0, 1.0, 2.0, 3.0}, "SteveJobs", "Pixar", "PixarRenderman", "Linux"),
-                    expected(idFunction, 3, new double[]{0.0, 1.0, 2.0}, "SteveJobs", "DemocraticParty", "BarackObama"),
-                    expected(idFunction, 4, new double[]{0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0}, "SteveJobs", "SteveJobsBiologicalFather", "UniversityOfWisconsin", "HigherLearningCommission", "Arizona", "MarkKelly", "ScottKelly", "Expedition26", "ISS")
+//                    expected(idFunction, 0, new double[]{0.0, 1.0}, "SteveJobs", "Apple"),
+//                    expected(idFunction, 1, new double[]{0.0, 1.0, 2.0, 3.0, 4.0}, "SteveJobs", "Apple", "AppleTV", "HDMI", "Microsoft"),
+//                    expected(idFunction, 2, new double[]{0.0, 1.0, 2.0, 3.0}, "SteveJobs", "Pixar", "PixarRenderman", "Linux"),
+//                    expected(idFunction, 3, new double[]{0.0, 1.0, 2.0}, "SteveJobs", "DemocraticParty", "BarackObama"),
+                    expected(idFunction, 0, new double[]{0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0}, "SteveJobs", "SteveJobsBiologicalFather", "UniversityOfWisconsin", "HigherLearningCommission", "Arizona", "MarkKelly", "ScottKelly", "Expedition26", "ISS")
             );
 
+//            List<Long> sourceNodes = Arrays.asList(
+//                    idFunction.of("SteveJobs"), idFunction.of("SteveJobs"),
+//                    idFunction.of("SteveJobs"), idFunction.of("SteveJobs"), idFunction.of("SteveJobs"));
+//            List<Long> targetNodes = Arrays.asList(
+//                    idFunction.of("Apple"), idFunction.of("Microsoft"),
+//                    idFunction.of("Linux"), idFunction.of("BarackObama"), idFunction.of("ISS"));
             List<Long> sourceNodes = Arrays.asList(
-                    idFunction.of("SteveJobs"), idFunction.of("SteveJobs"),
-                    idFunction.of("SteveJobs"), idFunction.of("SteveJobs"), idFunction.of("SteveJobs"));
+                    idFunction.of("SteveJobs"));
             List<Long> targetNodes = Arrays.asList(
-                    idFunction.of("Apple"), idFunction.of("Microsoft"),
-                    idFunction.of("Linux"), idFunction.of("BarackObama"), idFunction.of("ISS"));
+                    idFunction.of("ISS"));
             var config = defaultMultiplePairsConfigBuilder()
                     .sourceNodes(sourceNodes)
                     .targetNodes(targetNodes)
