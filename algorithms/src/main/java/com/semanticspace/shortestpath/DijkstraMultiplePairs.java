@@ -50,7 +50,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     // path id increasing in order of exploration
     private long pathIndex;
     // returns true if the given relationship should be traversed
-    private RelationshipFilter relationshipFilter;
+    private RelationshipFilter relationshipFilter = (sourceId, targetId, relationshipId) -> true;
 
     private final ExecutorService executorService;
     private final int concurrency;
@@ -114,7 +114,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     int counter = 0;
 
     public DijkstraMultiplePairs withRelationshipFilter(RelationshipFilter relationshipFilter) {
-        this.relationshipFilter = relationshipFilter;
+        this.relationshipFilter = this.relationshipFilter.and(relationshipFilter);
         return this;
     }
 
@@ -124,7 +124,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         List<PairTask> taskList = new ArrayList<>();
         for (int i = 0; i < sourceNodes.size(); i++) {
-            PairTask task = new PairTask(i, sourceNodes.get(i), targetNodes.get(i), relationshipFilter);
+            PairTask task = new PairTask(i, sourceNodes.get(i), targetNodes.get(i));
             taskList.add(task);
         }
 
@@ -156,10 +156,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         private final RelationshipIterator localRelationshipIterator;
 
-        private RelationshipFilter relationshipFilter = (sourceId, targetId, relationshipId) -> true;
-
-
-        public PairTask(int pairIndex, long sourceNode, long targetNode, RelationshipFilter relationshipFilter) {
+        public PairTask(int pairIndex, long sourceNode, long targetNode) {
             this.pairIndex = pairIndex;
             this.traversalPredicate = (node) -> node == targetNode ? EMIT_AND_STOP : CONTINUE;
             this.traversalState = CONTINUE;
@@ -169,10 +166,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             this.visited = new BitSet();
             this.sourceNode = sourceNode;
             this.targetNode = targetNode;
-
-            if(relationshipFilter != null) {
-                this.relationshipFilter = this.relationshipFilter.and(relationshipFilter);
-            }
 
             queue.add(sourceNode, 0.0);
         }
@@ -212,11 +205,13 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                             node,
                             1.0D,
                             (source, target, weight) -> {
-                                if (relationshipFilter.test(source, target, relationshipId.longValue())) {
-                                    updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
+                                synchronized (relationshipFilter) {
+                                    if (relationshipFilter.test(source, target, relationshipId.longValue())) {
+                                        updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
+                                    }
+                                    relationshipId.increment();
+                                    return true;
                                 }
-                                relationshipId.increment();
-                                return true;
                             }
 
                     );
