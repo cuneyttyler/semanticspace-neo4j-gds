@@ -45,11 +45,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
     private final Graph graph;
 
-    // Takes a visited node as input and decides if a path should be emitted.
-    private final TraversalPredicate traversalPredicate;
-    // Holds the current state of the traversal.
-    private List<TraversalState> traversalStates;
-
     private static List<Long> sourceNodes;
 
     private static List<Long> targetNodes;
@@ -89,7 +84,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
         return new DijkstraMultiplePairs(
                 graph,
                 sourceNodes,
-                (pairIndex, node) -> node == targetNodes.get(pairIndex) ? EMIT_AND_STOP : CONTINUE,
                 config.trackRelationships(),
                 heuristicFunction,
                 progressTracker,
@@ -113,7 +107,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     private DijkstraMultiplePairs(
             Graph graph,
             List<Long> sourceNodes,
-            TraversalPredicate traversalPredicate,
             boolean trackRelationships,
             Optional<HeuristicFunction> heuristicFunction,
             ProgressTracker progressTracker,
@@ -122,8 +115,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     ) {
         super(progressTracker);
         this.graph = graph;
-        this.traversalPredicate = traversalPredicate;
-        this.traversalStates = Stream.generate(() -> CONTINUE).limit(sourceNodes.size()).collect(Collectors.toList());
         this.trackRelationships = trackRelationships;
         this.relationships = trackRelationships ? new HugeLongLongMap() : null;
         this.pathIndex = 0L;
@@ -160,6 +151,10 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
     class PairTask implements Runnable {
         private final int pairIndex;
+
+        private final TraversalPredicate traversalPredicate;
+
+        private  TraversalState traversalState;
         private final HugeLongLongMap predecessors;
 
         private final HugeLongPriorityQueue queue;
@@ -178,6 +173,8 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         public PairTask(int pairIndex, long sourceNode, long targetNode) {
             this.pairIndex = pairIndex;
+            this.traversalPredicate = (node) -> node == targetNode ? EMIT_AND_STOP : CONTINUE;
+            this.traversalState = CONTINUE;
             this.predecessors = new HugeLongLongMap();
             this.localRelationshipIterator = graph.concurrentCopy();
             this.queue = HugeLongPriorityQueue.min(graph.nodeCount());
@@ -211,7 +208,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
         private PathResult next(int pairIndex, TraversalPredicate traversalPredicate, ImmutablePathResult.Builder pathResultBuilder) {
             var relationshipId = new MutableInt();
 
-            while (!queue.isEmpty() && running() && traversalStates.get(pairIndex) != EMIT_AND_STOP) {
+            while (!queue.isEmpty() && running() && traversalState != EMIT_AND_STOP) {
                 var node = queue.pop();
                 var cost = queue.cost(node);
                 visited.set(node);
@@ -233,7 +230,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                                     traverseCount++;
                                     int val = traverseMap.getOrDefault((long) (weight + cost), 0);
                                     traverseMap.put((long) (weight + cost), ++val);
-                                    if (val % 100 == 0) {
+                                    if (val % 100000 == 0) {
                                         progressTracker.logMessage(pairIndex + ". Traverse count for cost " + (weight + cost) + " with count " + val);
                                     }
 //                                System.out.println(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
@@ -248,12 +245,12 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
 
                 // Using the current node, decide if we need to emit a path and continue the traversal.
-                traversalStates.set(pairIndex, traversalPredicate.apply(pairIndex, node));
-                TraversalState state = traversalStates.get(pairIndex);
-                // progressTracker.logMessage(pairIndex + ". State: " + state);
-                // progressTracker.logMessage(pairIndex + ". TargetNode = " + targetNodes.get(pairIndex));
+//                TraversalState state = traversalStates.get(pairIndex);
+//                // progressTracker.logMessage(pairIndex + ". State: " + state);
+//                // progressTracker.logMessage(pairIndex + ". TargetNode = " + targetNodes.get(pairIndex));
 
-                if (traversalStates.get(pairIndex) == EMIT_AND_CONTINUE || traversalStates.get(pairIndex) == EMIT_AND_STOP) {
+                traversalState =  traversalPredicate.apply(node);
+                if (traversalState == EMIT_AND_STOP) {
                     progressTracker.logMessage(pairIndex + ". Returning result");
                     return pathResult(pairIndex, node, pathResultBuilder);
                 }
@@ -344,13 +341,12 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
     enum TraversalState {
         EMIT_AND_STOP,
-        EMIT_AND_CONTINUE,
         CONTINUE,
     }
 
     @FunctionalInterface
     public interface TraversalPredicate {
-        TraversalState apply(int pairIndex, long nodeId);
+        TraversalState apply(long nodeId);
     }
 
     @FunctionalInterface
