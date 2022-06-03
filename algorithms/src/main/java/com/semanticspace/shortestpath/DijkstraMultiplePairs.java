@@ -207,7 +207,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                         1.0D,
                         (source, target, weight) -> {
                             if(iteration == 0) {
-                                progressTracker.logMessage(pairIndex + ". " + localRelationshipIterator.);
                                 progressTracker.logMessage(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (cost+weight));
                             }
                             updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
