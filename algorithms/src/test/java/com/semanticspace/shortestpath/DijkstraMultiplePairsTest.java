@@ -360,6 +360,10 @@ final class DijkstraMultiplePairsTest {
             List<Long> targetNodes = Arrays.asList(
                     idFunction.of("Apple"), idFunction.of("Microsoft"),
                     idFunction.of("Linux"), idFunction.of("BarackObama"), idFunction.of("ISS"));
+//            List<Long> sourceNodes = Arrays.asList(
+//                    idFunction.of("SteveJobs"));
+//            List<Long> targetNodes = Arrays.asList(
+//                    idFunction.of("ISS"));
             var config = defaultMultiplePairsConfigBuilder()
                     .sourceNodes(sourceNodes)
                     .targetNodes(targetNodes)

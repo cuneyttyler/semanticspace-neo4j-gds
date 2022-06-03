@@ -4,12 +4,8 @@ import com.carrotsearch.hppc.BitSet;
 import com.carrotsearch.hppc.DoubleArrayDeque;
 import com.carrotsearch.hppc.LongArrayDeque;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.math3.util.Pair;
 import org.neo4j.gds.Algorithm;
 import org.neo4j.gds.api.Graph;
-import org.neo4j.gds.api.RelationshipCursor;
-import org.neo4j.gds.api.RelationshipIterator;
-import org.neo4j.gds.betweenness.BetweennessCentrality;
 import org.neo4j.gds.core.concurrency.ParallelUtil;
 import org.neo4j.gds.core.utils.mem.MemoryEstimation;
 import org.neo4j.gds.core.utils.mem.MemoryEstimations;
@@ -23,18 +19,9 @@ import org.neo4j.gds.paths.dijkstra.DijkstraResult;
 
 import java.util.*;
 import java.util.function.LongToDoubleFunction;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.concurrent.atomic.AtomicReference;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import static com.semanticspace.shortestpath.DijkstraMultiplePairs.TraversalState.CONTINUE;
-import static com.semanticspace.shortestpath.DijkstraMultiplePairs.TraversalState.EMIT_AND_CONTINUE;
 import static com.semanticspace.shortestpath.DijkstraMultiplePairs.TraversalState.EMIT_AND_STOP;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
@@ -44,11 +31,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     private static final long NO_RELATIONSHIP = -1;
 
     private final Graph graph;
-
-    // Takes a visited node as input and decides if a path should be emitted.
-    private final TraversalPredicate traversalPredicate;
-    // Holds the current state of the traversal.
-    private List<TraversalState> traversalStates;
 
     private static List<Long> sourceNodes;
 
@@ -89,7 +71,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
         return new DijkstraMultiplePairs(
                 graph,
                 sourceNodes,
-                (pairIndex, node) -> node == targetNodes.get(pairIndex) ? EMIT_AND_STOP : CONTINUE,
                 config.trackRelationships(),
                 heuristicFunction,
                 progressTracker,
@@ -113,7 +94,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     private DijkstraMultiplePairs(
             Graph graph,
             List<Long> sourceNodes,
-            TraversalPredicate traversalPredicate,
             boolean trackRelationships,
             Optional<HeuristicFunction> heuristicFunction,
             ProgressTracker progressTracker,
@@ -122,8 +102,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     ) {
         super(progressTracker);
         this.graph = graph;
-        this.traversalPredicate = traversalPredicate;
-        this.traversalStates = Stream.generate(() -> CONTINUE).limit(sourceNodes.size()).collect(Collectors.toList());
         this.trackRelationships = trackRelationships;
         this.relationships = trackRelationships ? new HugeLongLongMap() : null;
         this.pathIndex = 0L;
@@ -160,6 +138,10 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
     class PairTask implements Runnable {
         private final int pairIndex;
+
+        private final TraversalPredicate traversalPredicate;
+
+        private  TraversalState traversalState;
         private final HugeLongLongMap predecessors;
 
         private final HugeLongPriorityQueue queue;
@@ -169,10 +151,17 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
         private final long sourceNode;
 
         private final long targetNode;
+
         private final Graph localRelationshipIterator;
+
+        private int traverseCount = 0;
+
+        private Map<Long, Integer> traverseMap = new HashMap<>();
 
         public PairTask(int pairIndex, long sourceNode, long targetNode) {
             this.pairIndex = pairIndex;
+            this.traversalPredicate = (node) -> node == targetNode ? EMIT_AND_STOP : CONTINUE;
+            this.traversalState = CONTINUE;
             this.predecessors = new HugeLongLongMap();
             this.localRelationshipIterator = graph.concurrentCopy();
             this.queue = HugeLongPriorityQueue.min(graph.nodeCount());
@@ -206,12 +195,16 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
         private PathResult next(int pairIndex, TraversalPredicate traversalPredicate, ImmutablePathResult.Builder pathResultBuilder) {
             var relationshipId = new MutableInt();
 
-            while (!queue.isEmpty() && running() && traversalStates.get(pairIndex) != EMIT_AND_STOP) {
+            while (!queue.isEmpty() && running() && traversalState != EMIT_AND_STOP) {
                 var node = queue.pop();
                 var cost = queue.cost(node);
                 visited.set(node);
 
 //                progressTracker.logMessage(pairIndex + ".Popped node " + node + " with cost " + cost);
+
+                if(traverseCount % 10000 == 0) {
+                    progressTracker.logMessage(pairIndex + ". traversed " + traverseCount);
+                }
 
                 progressTracker.logProgress(localRelationshipIterator.degree(node));
 
@@ -219,23 +212,32 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                         node,
                         1.0D,
                         (source, target, weight) -> {
-                            if (relationshipFilter.test(source, target, relationshipId.longValue())) {
-                                System.out.println(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
-                                updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
-                            }
-                            relationshipId.increment();
+                            synchronized (queue) {
+//                            if (relationshipFilter.test(source, target, relationshipId.longValue())) {
+                                    traverseCount++;
+                                    int val = traverseMap.getOrDefault((long) (weight + cost), 0);
+                                    traverseMap.put((long) (weight + cost), ++val);
+                                    if (val % 100 == 0) {
+                                        progressTracker.logMessage(pairIndex + ". Traverse count for cost " + (weight + cost) + " with count " + val);
+                                    }
+//                                System.out.println(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
+//                                progressTracker.logMessage(pairIndex + ". Source: " + source + ", Target: " + target + ", Cost: " + (weight + cost));
+                                    updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
+//                            }
+                                    relationshipId.increment();
+                                }
                             return true;
                         }
                 );
 
 
                 // Using the current node, decide if we need to emit a path and continue the traversal.
-                traversalStates.set(pairIndex, traversalPredicate.apply(pairIndex, node));
-                TraversalState state = traversalStates.get(pairIndex);
-                // progressTracker.logMessage(pairIndex + ". State: " + state);
-                // progressTracker.logMessage(pairIndex + ". TargetNode = " + targetNodes.get(pairIndex));
+//                TraversalState state = traversalStates.get(pairIndex);
+//                // progressTracker.logMessage(pairIndex + ". State: " + state);
+//                // progressTracker.logMessage(pairIndex + ". TargetNode = " + targetNodes.get(pairIndex));
 
-                if (traversalStates.get(pairIndex) == EMIT_AND_CONTINUE || traversalStates.get(pairIndex) == EMIT_AND_STOP) {
+                traversalState =  traversalPredicate.apply(node);
+                if (traversalState == EMIT_AND_STOP) {
                     progressTracker.logMessage(pairIndex + ". Returning result");
                     return pathResult(pairIndex, node, pathResultBuilder);
                 }
@@ -326,13 +328,12 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
     enum TraversalState {
         EMIT_AND_STOP,
-        EMIT_AND_CONTINUE,
         CONTINUE,
     }
 
     @FunctionalInterface
     public interface TraversalPredicate {
-        TraversalState apply(int pairIndex, long nodeId);
+        TraversalState apply(long nodeId);
     }
 
     @FunctionalInterface
