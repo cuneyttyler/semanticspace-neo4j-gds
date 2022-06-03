@@ -50,7 +50,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     // path id increasing in order of exploration
     private long pathIndex;
     // returns true if the given relationship should be traversed
-    private RelationshipFilter relationshipFilter = (sourceId, targetId, relationshipId) -> true;
+    private RelationshipFilter relationshipFilter;
 
     private final ExecutorService executorService;
     private final int concurrency;
@@ -156,7 +156,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         private final RelationshipIterator localRelationshipIterator;
 
-        private final RelationshipFilter relationshipFilter;
+        private RelationshipFilter relationshipFilter  = (sourceId, targetId, relationshipId) -> true;;
 
         public PairTask(int pairIndex, long sourceNode, long targetNode, RelationshipFilter relationshipFilter) {
             this.pairIndex = pairIndex;
@@ -168,7 +168,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             this.visited = new BitSet();
             this.sourceNode = sourceNode;
             this.targetNode = targetNode;
-            this.relationshipFilter = relationshipFilter;
+            this.relationshipFilter = this.relationshipFilter.and(relationshipFilter);
 
             queue.add(sourceNode, 0.0);
         }
@@ -313,7 +313,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     }
 
     @FunctionalInterface
-    public interface RelationshipFilter extends Cloneable {
+    public interface RelationshipFilter {
         boolean test(long source, long target, long relationshipId);
 
         default RelationshipFilter and(RelationshipFilter after) {
@@ -321,10 +321,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                     this.test(sourceNodeId, targetNodeId, relationshipId) &&
                             after.test(sourceNodeId, targetNodeId, relationshipId);
         }
-
-//        default RelationshipFilter clone() {
-//            return this.clone();
-//        }
     }
 
     private static HugeLongPriorityQueue minPriorityQueue(long capacity, HeuristicFunction heuristicFunction) {
