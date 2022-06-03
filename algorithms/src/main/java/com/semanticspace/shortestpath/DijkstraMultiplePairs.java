@@ -6,9 +6,7 @@ import com.carrotsearch.hppc.LongArrayDeque;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.neo4j.gds.Algorithm;
 import org.neo4j.gds.api.Graph;
-import org.neo4j.gds.api.RelationshipIterator;
 import org.neo4j.gds.core.concurrency.ParallelUtil;
-import org.neo4j.gds.core.utils.TerminationFlag;
 import org.neo4j.gds.core.utils.mem.MemoryEstimation;
 import org.neo4j.gds.core.utils.mem.MemoryEstimations;
 import org.neo4j.gds.core.utils.paged.HugeLongLongMap;
@@ -124,7 +122,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         List<PairTask> taskList = new ArrayList<>();
         for (int i = 0; i < sourceNodes.size(); i++) {
-            PairTask task = new PairTask(i, sourceNodes.get(i), targetNodes.get(i));
+            PairTask task = new PairTask(i, graph.toMappedNodeId(sourceNodes.get(i)), graph.toMappedNodeId(targetNodes.get(i)));
             taskList.add(task);
         }
 
@@ -152,9 +150,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         private final long sourceNode;
 
-        private final long targetNode;
-
-        private final RelationshipIterator localRelationshipIterator;
+        private final Graph localRelationshipIterator;
 
         public PairTask(int pairIndex, long sourceNode, long targetNode) {
             this.pairIndex = pairIndex;
@@ -165,7 +161,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             this.queue = HugeLongPriorityQueue.min(graph.nodeCount());
             this.visited = new BitSet();
             this.sourceNode = sourceNode;
-            this.targetNode = targetNode;
 
             queue.add(sourceNode, 0.0);
         }
@@ -187,7 +182,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             synchronized (allPaths) {
                 allPaths.addAll(paths);
             }
-
         }
 
         private PathResult next(int pairIndex, TraversalPredicate traversalPredicate, ImmutablePathResult.Builder pathResultBuilder) {
@@ -198,13 +192,15 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                 var cost = queue.cost(node);
                 visited.set(node);
 
-                progressTracker.logProgress();
+                progressTracker.logProgress(graph.degree(node));
 
                 localRelationshipIterator.forEachRelationship(
                         node,
                         1.0D,
                         (source, target, weight) -> {
-                            updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
+                            if (relationshipFilter.test(source, target, relationshipId.longValue())) {
+                                updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
+                            }
                             relationshipId.increment();
                             return true;
                         }
@@ -215,7 +211,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                     return pathResult(pairIndex, node, pathResultBuilder);
                 }
             }
-
 
             return PathResult.EMPTY;
         }
