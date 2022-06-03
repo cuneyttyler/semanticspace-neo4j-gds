@@ -201,7 +201,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                 visited.set(node);
 
                 if(iteration == 0) {
-                    progressTracker.logMessage(pairIndex + ". Node: ");
+                    progressTracker.logMessage(pairIndex + ". Node: " + node);
                 }
 
                 progressTracker.logProgress();
