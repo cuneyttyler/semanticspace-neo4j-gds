@@ -124,7 +124,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         List<PairTask> taskList = new ArrayList<>();
         for (int i = 0; i < sourceNodes.size(); i++) {
-            PairTask task = new PairTask(i, sourceNodes.get(i), targetNodes.get(i));
+            PairTask task = new PairTask(i, sourceNodes.get(i), targetNodes.get(i), relationshipFilter);
             taskList.add(task);
         }
 
