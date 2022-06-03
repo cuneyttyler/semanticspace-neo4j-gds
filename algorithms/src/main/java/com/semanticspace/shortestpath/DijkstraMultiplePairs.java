@@ -168,7 +168,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             this.visited = new BitSet();
             this.sourceNode = sourceNode;
             this.targetNode = targetNode;
-            this.relationshipFilter = relationshipFilter.clone();
+            this.relationshipFilter = relationshipFilter;
 
             queue.add(sourceNode, 0.0);
         }
@@ -214,6 +214,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                                 relationshipId.increment();
                                 return true;
                             }
+
                     );
 
                     traversalState = traversalPredicate.apply(node);
@@ -259,7 +260,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             // We backtrack until we reach the source node.
             // The source node is either given by Dijkstra
             // or adjusted by Yen's algorithm.
-            var pathStart = sourceNodes.get(pairIndex);
+            var pathStart = sourceNode;
             var lastNode = target;
             var prevNode = lastNode;
 
@@ -321,9 +322,9 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                             after.test(sourceNodeId, targetNodeId, relationshipId);
         }
 
-        default RelationshipFilter clone() {
-            return this.clone();
-        }
+//        default RelationshipFilter clone() {
+//            return this.clone();
+//        }
     }
 
     private static HugeLongPriorityQueue minPriorityQueue(long capacity, HeuristicFunction heuristicFunction) {
