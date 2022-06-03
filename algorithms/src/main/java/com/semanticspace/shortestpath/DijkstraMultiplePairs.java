@@ -207,9 +207,9 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                         node,
                         1.0D,
                         (source, target, weight) -> {
-                            if (relationshipFilter.test(source, target, relationshipId.longValue())) {
+//                            if (relationshipFilter.test(source, target, relationshipId.longValue())) {
                                 updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
-                            }
+//                            }
                             relationshipId.increment();
                             return true;
                         }
