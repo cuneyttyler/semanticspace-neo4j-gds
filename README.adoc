@@ -7,6 +7,8 @@
 
 Dijkstra's concurrent version running on multiple (source-target) pairs.
 
+Procedure: `semanticspace.gds.dijkstraMultiplePairs.stream`
+
 .Parameters
 |===
 |Parameter |Data Type
