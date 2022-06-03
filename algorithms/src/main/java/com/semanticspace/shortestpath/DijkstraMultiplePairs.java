@@ -152,23 +152,17 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
         private final long sourceNode;
 
         private final long targetNode;
-
         private final RelationshipIterator localRelationshipIterator;
-
-        private int traverseCount = 0;
-
-        private Map<Long, Integer> traverseMap = new HashMap<>();
-
         public PairTask(int pairIndex, long sourceNode, long targetNode) {
             this.pairIndex = pairIndex;
-            this.traversalPredicate = (node) -> node == targetNode ? EMIT_AND_STOP : CONTINUE;
-            this.traversalState = CONTINUE;
             this.predecessors = new HugeLongLongMap();
             this.localRelationshipIterator = graph.concurrentCopy();
             this.queue = HugeLongPriorityQueue.min(graph.nodeCount());
             this.visited = new BitSet();
             this.sourceNode = sourceNode;
             this.targetNode = targetNode;
+            this.traversalPredicate = (node) -> node == this.targetNode ? EMIT_AND_STOP : CONTINUE;
+            this.traversalState = CONTINUE;
 
             queue.add(sourceNode, 0.0);
         }
@@ -209,9 +203,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                         (source, target, weight) -> {
 //                            synchronized (queue) {
 //                                if (relationshipFilter.test(source, target, relationshipId.longValue())) {
-                                    traverseCount++;
-                                    int val = traverseMap.getOrDefault((long) (weight + cost), 0);
-                                    traverseMap.put((long) (weight + cost), ++val);
                                     updateCost(pairIndex, source, target, relationshipId.intValue(), weight + cost);
 //                                }
                                 relationshipId.increment();
@@ -262,7 +253,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             // We backtrack until we reach the source node.
             // The source node is either given by Dijkstra
             // or adjusted by Yen's algorithm.
-            var pathStart = sourceNodes.get(pairIndex);
+            var pathStart = sourceNode;
             var lastNode = target;
             var prevNode = lastNode;
 
