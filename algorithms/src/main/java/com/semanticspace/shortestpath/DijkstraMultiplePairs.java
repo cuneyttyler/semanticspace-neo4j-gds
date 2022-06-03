@@ -214,7 +214,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                                 relationshipId.increment();
                                 return true;
                             }
-
                     );
 
                     traversalState = traversalPredicate.apply(node);
@@ -260,7 +259,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             // We backtrack until we reach the source node.
             // The source node is either given by Dijkstra
             // or adjusted by Yen's algorithm.
-            var pathStart = sourceNode;
+            var pathStart = sourceNodes.get(pairIndex);
             var lastNode = target;
             var prevNode = lastNode;
 
