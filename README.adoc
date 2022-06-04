@@ -20,7 +20,7 @@ Procedure: `semanticspace.gds.dijkstraMultiplePairs.stream`
 
 == Installing
 
-Simply run `./gradlew :open-packaging:shadowCopy` and place the .jar far located in `build/distributions`
+Simply run `./gradlew :open-packaging:shadowCopy` and place the .jar file located in `build/distributions`
 to your `$NEO4J_HOME/plugins` directory
 
 Do not forget to add `semanticspace.gds.*` to your `dbms.security.procedures.unrestricted` and
