@@ -16,7 +16,9 @@ import java.util.List;
 @Configuration
 public interface DijkstraMultiplePairsConfig extends SourceNodesConfig, TargetNodesConfig, AlgoBaseConfig, RelationshipWeightConfig {
 
-    boolean trackRelationships();
+    default boolean trackRelationships() {
+        return false;
+    }
 
     static DijkstraMultiplePairsConfig of(CypherMapWrapper userInput) {
         return new DijkstraMultiplePairsConfigImpl(userInput);
