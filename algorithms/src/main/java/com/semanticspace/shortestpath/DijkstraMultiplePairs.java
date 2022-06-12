@@ -182,6 +182,10 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             synchronized (allPaths) {
                 allPaths.addAll(paths);
             }
+
+            this.graph = null;
+            this.predecessors = null;
+            this.queue = null;
         }
 
         private PathResult next(int pairIndex, TraversalPredicate traversalPredicate, ImmutablePathResult.Builder pathResultBuilder) {
