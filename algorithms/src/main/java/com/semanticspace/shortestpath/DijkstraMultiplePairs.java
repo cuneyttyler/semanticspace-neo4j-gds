@@ -142,16 +142,16 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
         private final TraversalPredicate traversalPredicate;
 
         private TraversalState traversalState;
-        
-        private final HugeLongLongMap predecessors;
 
-        private final HugeLongPriorityQueue queue;
+        private HugeLongLongMap predecessors;
+
+        private HugeLongPriorityQueue queue;
 
         private final BitSet visited;
 
         private final long sourceNode;
 
-        private final Graph localRelationshipIterator;
+        private Graph localRelationshipIterator;
 
         public PairTask(int pairIndex, long sourceNode, long targetNode) {
             this.pairIndex = pairIndex;
