@@ -14,7 +14,9 @@ import java.util.List;
 
 @ValueClass
 @Configuration
-public interface DijkstraMultiplePairsConfig extends SourceNodesConfig, TargetNodesConfig, AlgoBaseConfig, RelationshipWeightConfig, TrackRelationshipsConfig {
+public interface DijkstraMultiplePairsConfig extends SourceNodesConfig, TargetNodesConfig, AlgoBaseConfig, RelationshipWeightConfig {
+
+    boolean trackRelationships();
 
     static DijkstraMultiplePairsConfig of(CypherMapWrapper userInput) {
         return new DijkstraMultiplePairsConfigImpl(userInput);
