@@ -1,7 +1,7 @@
 = Semantic Space Neo4j Graph Data Science Additional Algorithms
 
 
-`Neo4j version:` 4.4.7  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `GDS version:` 2.0.4
+`Neo4j version:` 4.4.7  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; `GDS version:` 2.1.0
 
 == DijkstraMultiplePairs
 
