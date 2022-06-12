@@ -142,6 +142,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
         private final TraversalPredicate traversalPredicate;
 
         private TraversalState traversalState;
+        
         private final HugeLongLongMap predecessors;
 
         private final HugeLongPriorityQueue queue;
@@ -183,7 +184,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                 allPaths.addAll(paths);
             }
 
-            this.graph = null;
+            this.localRelationshipIterator = null;
             this.predecessors = null;
             this.queue = null;
         }
