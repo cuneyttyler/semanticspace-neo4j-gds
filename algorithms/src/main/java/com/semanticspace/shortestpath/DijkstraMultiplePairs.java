@@ -43,7 +43,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     // in the adjacency list of a single node.
     private final boolean trackRelationships;
     // relationship ids (null, if trackRelationships is false)
-    private final HugeLongLongMap relationships;
 
     // path id increasing in order of exploration
     private long pathIndex;
@@ -103,7 +102,6 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
         super(progressTracker);
         this.graph = graph;
         this.trackRelationships = trackRelationships;
-        this.relationships = trackRelationships ? new HugeLongLongMap() : null;
         this.pathIndex = 0L;
         this.concurrency = concurrency;
         this.executorService = executorService;
@@ -147,6 +145,8 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         private HugeLongPriorityQueue queue;
 
+        private final HugeLongLongMap relationships;
+
         private final BitSet visited;
 
         private final long sourceNode;
@@ -158,6 +158,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
             this.traversalPredicate = (node) -> node == targetNode ? EMIT_AND_STOP : CONTINUE;
             this.traversalState = CONTINUE;
             this.predecessors = new HugeLongLongMap();
+            this.relationships = trackRelationships ? new HugeLongLongMap() : null;
             this.localRelationshipIterator = graph.concurrentCopy();
             this.queue = HugeLongPriorityQueue.min(graph.nodeCount());
             this.visited = new BitSet();
