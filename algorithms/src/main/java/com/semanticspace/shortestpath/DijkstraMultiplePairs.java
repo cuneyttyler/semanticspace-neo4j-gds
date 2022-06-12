@@ -167,7 +167,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         @Override
         public void run() {
-            progressTracker.logMessage("Running task for pair " + this.pairIndex);
+//            progressTracker.logMessage("Running task for pair " + this.pairIndex);
 
             var pathResultBuilder = ImmutablePathResult.builder();
 
@@ -192,7 +192,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
                 var cost = queue.cost(node);
                 visited.set(node);
 
-                progressTracker.logProgress(graph.degree(node));
+//                progressTracker.logProgress(graph.degree(node));
 
                 localRelationshipIterator.forEachRelationship(
                         node,
