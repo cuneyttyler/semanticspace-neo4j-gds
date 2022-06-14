@@ -10,6 +10,7 @@ import org.neo4j.gds.core.concurrency.ParallelUtil;
 import org.neo4j.gds.core.utils.mem.MemoryEstimation;
 import org.neo4j.gds.core.utils.mem.MemoryEstimations;
 import org.neo4j.gds.core.utils.paged.HugeLongLongMap;
+import org.neo4j.gds.core.utils.progress.tasks.LogLevel;
 import org.neo4j.gds.core.utils.progress.tasks.ProgressTracker;
 import org.neo4j.gds.core.utils.queue.HugeLongPriorityQueue;
 import org.neo4j.gds.mem.MemoryUsage;
@@ -118,14 +119,12 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
     public DijkstraResult compute() {
         int index = 0;
 
-        List<PairTask> taskList = new ArrayList<>();
         for (int i = 0; i < sourceNodes.size(); i++) {
             PairTask task = new PairTask(i, graph.toMappedNodeId(sourceNodes.get(i)), graph.toMappedNodeId(targetNodes.get(i)));
-            taskList.add(task);
+            ParallelUtil.run(ParallelUtil.tasks(concurrency, () -> task), executorService);
         }
 
         progressTracker.beginSubTask();
-        ParallelUtil.runWithConcurrency(concurrency, taskList, 1, MICROSECONDS, terminationFlag, executorService);
 
         allPaths.sort((o1, o2) -> o1.index() > o2.index() ? 1 : -1);
         return new DijkstraResult(allPaths.stream(), progressTracker::endSubTask);
@@ -169,7 +168,7 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
 
         @Override
         public void run() {
-//            progressTracker.logMessage("Running task for pair " + this.pairIndex);
+            progressTracker.logMessage(LogLevel.INFO, "Running task for pair " + this.pairIndex);
 
             var pathResultBuilder = ImmutablePathResult.builder();
 
@@ -193,12 +192,12 @@ public class DijkstraMultiplePairs extends Algorithm<DijkstraResult> {
         private PathResult next(int pairIndex, TraversalPredicate traversalPredicate, ImmutablePathResult.Builder pathResultBuilder) {
             var relationshipId = new MutableInt();
 
-            while (!queue.isEmpty() && running() && traversalState != EMIT_AND_STOP) {
+            while (!queue.isEmpty() && terminationFlag.running() && traversalState != EMIT_AND_STOP) {
                 var node = queue.pop();
                 var cost = queue.cost(node);
                 visited.set(node);
 
-//                progressTracker.logProgress(graph.degree(node));
+                progressTracker.logProgress(graph.degree(node));
 
                 localRelationshipIterator.forEachRelationship(
                         node,

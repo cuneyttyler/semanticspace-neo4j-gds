@@ -43,18 +43,6 @@ final class DijkstraMultiplePairsTest {
         );
     }
 
-    @ParameterizedTest
-    @MethodSource("expectedMemoryEstimation")
-    void shouldComputeMemoryEstimation(int nodeCount, boolean trackRelationships, long expectedBytes) {
-        TestSupport.assertMemoryEstimation(
-                () -> DijkstraMultiplePairs.memoryEstimation(trackRelationships),
-                nodeCount,
-                1,
-                expectedBytes,
-                expectedBytes
-        );
-    }
-
     @Nested
     class Graph2 {
 

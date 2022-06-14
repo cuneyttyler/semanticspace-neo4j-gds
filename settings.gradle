@@ -24,6 +24,5 @@ project(':proc-test').projectDir = file('proc-test')
 
 include('test-graph-loaders')
 project(':test-graph-loaders').projectDir = file('test-graph-loaders')
-include 'test2'
 include 'proc-test'
 

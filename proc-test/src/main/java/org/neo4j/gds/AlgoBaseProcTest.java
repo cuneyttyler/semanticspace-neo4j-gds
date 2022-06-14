@@ -52,7 +52,9 @@ import org.neo4j.procedure.Procedure;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -65,7 +67,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.gds.GraphFactoryTestSupport.FactoryType.CYPHER;
 import static org.neo4j.gds.QueryRunner.runQuery;
-import static org.neo4j.gds.config.GraphProjectFromCypherConfig.ALL_RELATIONSHIPS_QUERY;
 import static org.neo4j.gds.config.GraphProjectFromStoreConfig.NODE_PROPERTIES_KEY;
 import static org.neo4j.gds.config.GraphProjectFromStoreConfig.RELATIONSHIP_PROPERTIES_KEY;
 import static org.neo4j.gds.utils.StringFormatting.formatWithLocale;
@@ -168,6 +169,7 @@ public interface AlgoBaseProcTest<ALGORITHM extends Algorithm<RESULT>, CONFIG ex
     class InvocationCountingTaskStore extends GlobalTaskStore {
         public int registerTaskInvocations;
         public int removeTaskInvocations;
+        public List<JobId> seenJobIds = new ArrayList<>();
 
         @Override
         public void store(
@@ -175,6 +177,8 @@ public interface AlgoBaseProcTest<ALGORITHM extends Algorithm<RESULT>, CONFIG ex
         ) {
             super.store(username, jobId, task);
             registerTaskInvocations++;
+
+            seenJobIds.add(jobId);
         }
 
         @Override
@@ -195,7 +199,7 @@ public interface AlgoBaseProcTest<ALGORITHM extends Algorithm<RESULT>, CONFIG ex
             relationshipProjections()
         );
         applyOnProcedure(proc -> {
-            proc.taskRegistryFactory = () -> new TaskRegistry("", taskStore);
+            proc.taskRegistryFactory = jobId -> new TaskRegistry("", taskStore, jobId);
 
             GraphStore graphStore = graphLoader(graphProjectConfig).graphStore();
             GraphStoreCatalog.set(
@@ -229,16 +233,46 @@ public interface AlgoBaseProcTest<ALGORITHM extends Algorithm<RESULT>, CONFIG ex
         });
     }
 
+    @Test
+    default void shouldRegisterTaskWithCorrectJobId() {
+        var taskStore = new InvocationCountingTaskStore();
+
+        String loadedGraphName = "loadedGraph";
+        GraphProjectConfig graphProjectConfig = withNameAndRelationshipProjections(
+            "",
+            loadedGraphName,
+            relationshipProjections()
+        );
+        applyOnProcedure(proc -> {
+            proc.taskRegistryFactory = jobId -> new TaskRegistry("", taskStore, jobId);
+
+            GraphStore graphStore = graphLoader(graphProjectConfig).graphStore();
+            GraphStoreCatalog.set(
+                graphProjectConfig,
+                graphStore
+            );
+
+            var someJobId = new JobId();
+            Map<String, Object> mapWithJobId = Map.of("jobId", someJobId);
+
+            Map<String, Object> configMap = createMinimalConfig(CypherMapWrapper.create(mapWithJobId)).toMap();
+            proc.compute(
+                loadedGraphName,
+                configMap,
+                releaseAlgorithm(),
+                true
+            );
+
+            assertThat(taskStore.seenJobIds).containsExactly(someJobId);
+        });
+    }
+
     default RelationshipProjections relationshipProjections() {
         return RelationshipProjections.ALL;
     }
 
     default boolean requiresUndirected() {
         return false;
-    }
-
-    default String relationshipQuery() {
-        return ALL_RELATIONSHIPS_QUERY;
     }
 
     default boolean releaseAlgorithm() {
@@ -382,15 +416,6 @@ public interface AlgoBaseProcTest<ALGORITHM extends Algorithm<RESULT>, CONFIG ex
             .filter(method -> {
                 String procedureMethodName = getProcedureMethodName(method);
                 return procedureMethodName.endsWith("stream") || procedureMethodName.endsWith("write");
-            });
-    }
-
-    default Stream<Method> getWriteStreamStatsProcedures(AlgoBaseProc<?, RESULT, CONFIG, ?> proc) {
-        return getProcedureMethods(proc)
-            .filter(method -> {
-                var procedureMethodName = getProcedureMethodName(method);
-                return procedureMethodName.endsWith("stream") || procedureMethodName.endsWith("write") || procedureMethodName.endsWith(
-                    "stats");
             });
     }
 

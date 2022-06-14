@@ -49,6 +49,7 @@ dependencies {
     testImplementation 'org.neo4j.gds:graph-schema-api:' + ver.'gds'
     testImplementation 'org.neo4j.gds:test-utils:' + ver.'gds'
     testImplementation 'org.neo4j.gds:neo4j-kernel-adapter-api:' + ver.'gds'
+    testImplementation 'org.neo4j.gds:neo4j-kernel-adapter-api:' + ver.'gds'
     testImplementation project(':proc-test')
     testImplementation 'org.neo4j.gds:proc-path-finding:' + ver.'gds'
     testImplementation group: 'org.mockito', name:'mockito-junit-jupiter', version: ver.'mockito-junit-jupiter'

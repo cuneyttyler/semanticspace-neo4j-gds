@@ -1,5 +1,6 @@
 package com.semanticspace.shortestpath;
 
+import org.immutables.value.Value;
 import org.neo4j.gds.annotation.Configuration;
 import org.neo4j.gds.annotation.ValueClass;
 import org.neo4j.gds.config.AlgoBaseConfig;
@@ -16,6 +17,7 @@ import java.util.List;
 @Configuration
 public interface DijkstraMultiplePairsConfig extends SourceNodesConfig, TargetNodesConfig, AlgoBaseConfig, RelationshipWeightConfig {
 
+    @Value.Default
     default boolean trackRelationships() {
         return false;
     }
