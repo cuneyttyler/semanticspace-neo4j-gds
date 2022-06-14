@@ -5,7 +5,7 @@ plugins {
 apply plugin: 'java-library'
 
 group 'com.semanticspace.gds'
-version '2.0.4'
+version '1.0.1'
 
 repositories {
     mavenCentral()
